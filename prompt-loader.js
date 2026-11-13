@@ -67,6 +67,7 @@ class PromptLoader {
       promptContent = this.injectProgrammingLanguage(promptContent, programmingLanguage, normalizedSkillName);
     }
 
+    promptContent += this.getUserContext(normalizedSkillName);
     return promptContent;
   }
 
@@ -110,7 +111,26 @@ STRICT REQUIREMENTS:
    * @param {Array} storedMemory - Current stored memory from your system
    * @returns {boolean} True if memory is empty
    */
-  isFirstTimeInteraction(storedMemory) {
+  getUserContext(skillName) {
+  if (!['interview', 'behavioural'].includes(skillName)) return '';
+
+  const dir = path.join(__dirname, 'context');
+  const read = (file) => {
+    try { return fs.readFileSync(path.join(dir, file), 'utf8').trim(); }
+    catch (e) { return ''; }
+  };
+
+  const role = read('role.md');
+  const cv = read('cv.md');
+  if (!role && !cv) return '';
+
+  let out = `\n\n## CANDIDATE CONTEXT\nUse this to tailor answers. For anything about the candidate's experience, skills or achievements, use ONLY facts stated here. If a question needs experience that is not covered here, say so briefly instead of inventing one.\n`;
+  if (role) out += `\n### Role applied for\n${role}\n`;
+  if (cv) out += `\n### Candidate CV\n${cv}\n`;
+  return out;
+}
+
+isFirstTimeInteraction(storedMemory) {
     return !storedMemory || storedMemory.length === 0;
   }
 
